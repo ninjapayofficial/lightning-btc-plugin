@@ -50,8 +50,12 @@ module.exports = {
     const router = express.Router();
 
     // Register routes after syncing
+    // Route to serve the plugin's interface (index.html)
+    router.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, 'views', 'index.html'));
+      });
     // Route to create an invoice
-    app.post('/create-invoice', async (req, res) => {
+    router.post('/create-invoice', async (req, res) => {
       try {
         const { amount, memo } = req.body;
 
@@ -91,7 +95,7 @@ module.exports = {
     });
 
     // Route to pay an invoice
-    app.post('/pay-invoice', async (req, res) => {
+    router.post('/pay-invoice', async (req, res) => {
       try {
         const { bolt11 } = req.body;
 
@@ -129,7 +133,7 @@ module.exports = {
     });
 
     // Route to get transaction history
-    app.get('/transactions', async (req, res) => {
+    router.get('/transactions', async (req, res) => {
       try {
         const transactions = await Transaction.findAll();
         res.json(transactions);
@@ -140,7 +144,7 @@ module.exports = {
     });
 
     // Route to get wallet balance
-    app.get('/balance', async (req, res) => {
+    router.get('/balance', async (req, res) => {
       try {
         const response = await axios.get('https://demo.lnbits.com/api/v1/wallet', {
           headers: {
