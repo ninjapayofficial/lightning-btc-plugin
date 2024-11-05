@@ -1,14 +1,19 @@
 // src/index.js
 const axios = require('axios');
+const path = require('path');
 
 module.exports = {
-  init: function (app, sequelize, invoiceKey) {
-    console.log('Lightning BTC Plugin initialized with Invoice Key:', invoiceKey);
+  init: async function (app, sequelize, invoiceKey) {
+    // Determine the plugin name from the directory name
+    const pluginPath = __dirname;
+    const pluginName = path.basename(pluginPath);
+
+    console.log(`Initializing plugin '${pluginName}' with Invoice Key: ${invoiceKey}`);
 
     // Define a Sequelize model for transaction history
     const { DataTypes } = require('sequelize');
 
-    const Transaction = sequelize.define('Transaction', {
+    const Transaction = sequelize.define(`${pluginName}_Transaction`, {
       txid: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -16,7 +21,7 @@ module.exports = {
       },
       amount: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
       },
       description: {
         type: DataTypes.STRING,
@@ -25,24 +30,33 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
     });
 
     // Sync the model with the database
-    Transaction.sync()
-      .then(() => {
-        console.log('Transaction model synced with the database');
-      })
-      .catch((err) => {
-        console.error('Error syncing Transaction model:', err);
-      });
+    try {
+      await Transaction.sync();
+      console.log(`Transaction model for plugin '${pluginName}' synced with the database`);
+    } catch (err) {
+      console.error(`Error syncing Transaction model for plugin '${pluginName}':`, err);
+    }
 
+    // Create a router for the plugin
+    const express = require('express');
+    const router = express.Router();
+
+    // Register routes after syncing
     // Route to create an invoice
-    app.post('/lightning-btc/create-invoice', async (req, res) => {
+    app.post('/create-invoice', async (req, res) => {
       try {
         const { amount, memo } = req.body;
 
         const response = await axios.post(
-          'https://demo.lnbits.com/api/v1/payments', 
+          'https://demo.lnbits.com/api/v1/payments',
           {
             out: false,
             amount,
@@ -71,13 +85,13 @@ module.exports = {
           payment_hash,
         });
       } catch (error) {
-        console.error('Error creating invoice:', error);
+        console.error('Error creating invoice:', error.response ? error.response.data : error.message);
         res.status(500).send('Error creating invoice.');
       }
     });
 
     // Route to pay an invoice
-    app.post('/lightning-btc/pay-invoice', async (req, res) => {
+    app.post('/pay-invoice', async (req, res) => {
       try {
         const { bolt11 } = req.body;
 
@@ -109,13 +123,13 @@ module.exports = {
           payment_hash,
         });
       } catch (error) {
-        console.error('Error paying invoice:', error);
+        console.error('Error paying invoice:', error.response ? error.response.data : error.message);
         res.status(500).send('Error paying invoice.');
       }
     });
 
     // Route to get transaction history
-    app.get('/lightning-btc/transactions', async (req, res) => {
+    app.get('/transactions', async (req, res) => {
       try {
         const transactions = await Transaction.findAll();
         res.json(transactions);
@@ -124,5 +138,27 @@ module.exports = {
         res.status(500).send('Error fetching transactions.');
       }
     });
+
+    // Route to get wallet balance
+    app.get('/balance', async (req, res) => {
+      try {
+        const response = await axios.get('https://demo.lnbits.com/api/v1/wallet', {
+          headers: {
+            'X-Api-Key': invoiceKey,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const { balance } = response.data;
+
+        res.json({ balance });
+      } catch (error) {
+        console.error('Error fetching balance:', error.response ? error.response.data : error.message);
+        res.status(500).send('Error fetching balance.');
+      }
+    });
+
+    // Mount the router under '/plugin-name'
+    app.use(`/${pluginName}`, router);
   },
 };

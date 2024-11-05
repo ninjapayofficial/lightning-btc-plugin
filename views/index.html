@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lightning BTC Plugin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .section {
+      margin-bottom: 40px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"], input[type="number"] {
+      width: 300px;
+      padding: 8px;
+    }
+    button {
+      padding: 8px 12px;
+      margin-top: 10px;
+    }
+    .message {
+      margin-top: 10px;
+      color: green;
+    }
+    .error {
+      margin-top: 10px;
+      color: red;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Lightning BTC Plugin</h1>
+
+  <!-- Balance Section -->
+  <div class="section">
+    <h2>Wallet Balance</h2>
+    <p id="balance">Loading balance...</p>
+    <button id="refreshBalanceBtn">Refresh Balance</button>
+  </div>
+
+  <!-- Create Invoice Section -->
+  <div class="section">
+    <h2>Create Invoice</h2>
+    <label for="invoiceAmount">Amount (sats):</label>
+    <input type="number" id="invoiceAmount" placeholder="Amount in sats">
+    <label for="invoiceMemo">Memo:</label>
+    <input type="text" id="invoiceMemo" placeholder="Memo (optional)">
+    <button id="createInvoiceBtn">Create Invoice</button>
+    <div id="createInvoiceMessage"></div>
+  </div>
+
+  <!-- Pay Invoice Section -->
+  <div class="section">
+    <h2>Pay Invoice</h2>
+    <label for="bolt11">Invoice (BOLT11):</label>
+    <input type="text" id="bolt11" placeholder="lnbc...">
+    <button id="payInvoiceBtn">Pay Invoice</button>
+    <div id="payInvoiceMessage"></div>
+  </div>
+
+  <!-- Transactions Section -->
+  <div class="section">
+    <h2>Transaction History</h2>
+    <button id="refreshTransactionsBtn">Refresh Transactions</button>
+    <table id="transactionsTable">
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>Amount</th>
+          <th>Description</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Transactions will be populated here -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // Base URL for the plugin
+    const baseUrl = window.location.pathname.replace(/\/$/, '');
+
+    // Function to load wallet balance
+    function loadBalance() {
+      fetch(`${baseUrl}/balance`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('balance').textContent = data.balance + ' sats';
+        })
+        .catch(error => {
+          console.error('Error fetching balance:', error);
+          document.getElementById('balance').textContent = 'Error fetching balance.';
+        });
+    }
+
+    // Function to create an invoice
+    document.getElementById('createInvoiceBtn').addEventListener('click', () => {
+      const amount = parseInt(document.getElementById('invoiceAmount').value);
+      const memo = document.getElementById('invoiceMemo').value;
+
+      if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid amount.');
+        return;
+      }
+
+      fetch(`${baseUrl}/create-invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, memo })
+      })
+      .then(response => response.json())
+      .then(data => {
+        const messageDiv = document.getElementById('createInvoiceMessage');
+        messageDiv.innerHTML = '<p class="message">Invoice created successfully!</p>';
+        messageDiv.innerHTML += '<p><strong>Payment Request:</strong> ' + data.payment_request + '</p>';
+        loadTransactions(); // Refresh transactions
+      })
+      .catch(error => {
+        console.error('Error creating invoice:', error);
+        document.getElementById('createInvoiceMessage').innerHTML = '<p class="error">Error creating invoice.</p>';
+      });
+    });
+
+    // Function to pay an invoice
+    document.getElementById('payInvoiceBtn').addEventListener('click', () => {
+      const bolt11 = document.getElementById('bolt11').value.trim();
+
+      if (!bolt11) {
+        alert('Please enter a BOLT11 invoice.');
+        return;
+      }
+
+      fetch(`${baseUrl}/pay-invoice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bolt11 })
+      })
+      .then(response => response.json())
+      .then(data => {
+        const messageDiv = document.getElementById('payInvoiceMessage');
+        messageDiv.innerHTML = '<p class="message">Invoice paid successfully!</p>';
+        messageDiv.innerHTML += '<p><strong>Payment Hash:</strong> ' + data.payment_hash + '</p>';
+        loadBalance(); // Refresh balance after payment
+        loadTransactions(); // Refresh transactions
+      })
+      .catch(error => {
+        console.error('Error paying invoice:', error);
+        document.getElementById('payInvoiceMessage').innerHTML = '<p class="error">Error paying invoice.</p>';
+      });
+    });
+
+    // Function to load transactions
+    function loadTransactions() {
+      fetch(`${baseUrl}/transactions`)
+        .then(response => response.json())
+        .then(transactions => {
+          const tbody = document.querySelector('#transactionsTable tbody');
+          tbody.innerHTML = '';
+          transactions.forEach(tx => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${tx.txid}</td>
+              <td>${tx.amount !== null ? tx.amount + ' sats' : 'N/A'}</td>
+              <td>${tx.description}</td>
+              <td>${new Date(tx.createdAt).toLocaleString()}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading transactions:', error);
+        });
+    }
+
+    // Event listeners for refresh buttons
+    document.getElementById('refreshBalanceBtn').addEventListener('click', loadBalance);
+    document.getElementById('refreshTransactionsBtn').addEventListener('click', loadTransactions);
+
+    // Load balance and transactions on page load
+    window.onload = () => {
+      loadBalance();
+      loadTransactions();
+    };
+  </script>
+
+</body>
+</html>
