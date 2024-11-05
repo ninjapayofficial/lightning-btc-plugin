@@ -37,12 +37,12 @@ module.exports = {
       });
 
     // Route to create an invoice
-    app.post('/create-invoice', async (req, res) => {
+    app.post('/lightning-btc/create-invoice', async (req, res) => {
       try {
         const { amount, memo } = req.body;
 
         const response = await axios.post(
-          'https://lnbits.com/api/v1/payments',
+          'https://legend.lnbits.com/api/v1/payments', 
           {
             out: false,
             amount,
@@ -77,12 +77,12 @@ module.exports = {
     });
 
     // Route to pay an invoice
-    app.post('/pay-invoice', async (req, res) => {
+    app.post('/lightning-btc/pay-invoice', async (req, res) => {
       try {
         const { bolt11 } = req.body;
 
         const response = await axios.post(
-          'https://lnbits.com/api/v1/payments',
+          'https://legend.lnbits.com/api/v1/payments',
           {
             out: true,
             bolt11,
@@ -115,7 +115,7 @@ module.exports = {
     });
 
     // Route to get transaction history
-    app.get('/transactions', async (req, res) => {
+    app.get('/lightning-btc/transactions', async (req, res) => {
       try {
         const transactions = await Transaction.findAll();
         res.json(transactions);
