@@ -42,7 +42,7 @@ module.exports = {
         const { amount, memo } = req.body;
 
         const response = await axios.post(
-          'https://legend.lnbits.com/api/v1/payments', 
+          'https://demo.lnbits.com/api/v1/payments', 
           {
             out: false,
             amount,
@@ -82,7 +82,7 @@ module.exports = {
         const { bolt11 } = req.body;
 
         const response = await axios.post(
-          'https://legend.lnbits.com/api/v1/payments',
+          'https://demo.lnbits.com/api/v1/payments',
           {
             out: true,
             bolt11,
