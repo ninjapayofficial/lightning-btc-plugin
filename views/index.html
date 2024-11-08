@@ -105,7 +105,12 @@
     // Function to load wallet balance
     function loadBalance() {
       fetch(`${baseUrl}/balance`)
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Error fetching balance.');
+          }
+          return response.json();
+        })
         .then(data => {
           document.getElementById('balance').textContent = data.balance + ' sats';
         })
@@ -130,7 +135,12 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, memo })
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error creating invoice.');
+        }
+        return response.json();
+      })
       .then(data => {
         const messageDiv = document.getElementById('createInvoiceMessage');
         messageDiv.innerHTML = '<p class="message">Invoice created successfully!</p>';
@@ -157,7 +167,12 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bolt11 })
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Error paying invoice.');
+        }
+        return response.json();
+      })
       .then(data => {
         const messageDiv = document.getElementById('payInvoiceMessage');
         messageDiv.innerHTML = '<p class="message">Invoice paid successfully!</p>';
@@ -174,7 +189,12 @@
     // Function to load transactions
     function loadTransactions() {
       fetch(`${baseUrl}/transactions`)
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Error loading transactions.');
+          }
+          return response.json();
+        })
         .then(transactions => {
           const tbody = document.querySelector('#transactionsTable tbody');
           tbody.innerHTML = '';

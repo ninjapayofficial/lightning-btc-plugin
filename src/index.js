@@ -1,19 +1,32 @@
 // src/index.js
 const axios = require('axios');
 const path = require('path');
+const { DataTypes } = require('sequelize');
+const express = require('express');
 
 module.exports = {
-  init: async function (app, sequelize, invoiceKey) {
+  init: async function (router, sequelize) {
     // Determine the plugin name from the directory name
     const pluginPath = __dirname;
     const pluginName = path.basename(pluginPath);
 
-    console.log(`Initializing plugin '${pluginName}' with Invoice Key: ${invoiceKey}`);
+    console.log(`Initializing plugin '${pluginName}'`);
 
     // Define a Sequelize model for transaction history
-    const { DataTypes } = require('sequelize');
-
-    const Transaction = sequelize.define('lightning_btc_plugin_Transactions', {
+    const Transaction = sequelize.define('lightning_btc_plugin_Transaction', {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      userId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      walletId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+      },
       txid: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -35,30 +48,32 @@ module.exports = {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      freezeTableName: true, // Prevents Sequelize from pluralizing table name
     });
 
-    // // Sync the model with the database
-    // try {
-    //   await Transaction.sync();
-    //   console.log(`Transaction model for plugin '${pluginName}' synced with the database`);
-    // } catch (err) {
-    //   console.error(`Error syncing Transaction model for plugin '${pluginName}':`, err);
-    // }
+    // Remove the sync call as migrations handle schema updates
+    // await Transaction.sync();
 
-    // Create a router for the plugin
-    const express = require('express');
-    const router = express.Router();
-
-    // Register routes after syncing
-    // Route to serve the plugin's interface (index.html)
+    // Serve the plugin's interface (index.html)
     router.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, 'views', 'index.html'));
-      });
+      res.sendFile(path.join(__dirname, 'views', 'index.html'));
+    });
+
     // Route to create an invoice
     router.post('/create-invoice', async (req, res) => {
-      try {
-        const { amount, memo } = req.body;
+      const { amount, memo } = req.body;
+      const { uid: userId, walletId, invoiceKey } = req.user;
 
+      if (!invoiceKey) {
+        return res.status(400).send('Invoice key not found.');
+      }
+
+      try {
         const response = await axios.post(
           'https://demo.lnbits.com/api/v1/payments',
           {
@@ -78,6 +93,8 @@ module.exports = {
 
         // Store the transaction in the database
         await Transaction.create({
+          userId,
+          walletId,
           txid: payment_hash,
           amount,
           description: memo,
@@ -89,16 +106,24 @@ module.exports = {
           payment_hash,
         });
       } catch (error) {
-        console.error('Error creating invoice:', error.response ? error.response.data : error.message);
+        console.error(
+          'Error creating invoice:',
+          error.response ? error.response.data : error.message
+        );
         res.status(500).send('Error creating invoice.');
       }
     });
 
     // Route to pay an invoice
     router.post('/pay-invoice', async (req, res) => {
-      try {
-        const { bolt11 } = req.body;
+      const { bolt11 } = req.body;
+      const { uid: userId, walletId, invoiceKey } = req.user;
 
+      if (!invoiceKey) {
+        return res.status(400).send('Invoice key not found.');
+      }
+
+      try {
         const response = await axios.post(
           'https://demo.lnbits.com/api/v1/payments',
           {
@@ -117,6 +142,8 @@ module.exports = {
 
         // Store the transaction in the database
         await Transaction.create({
+          userId,
+          walletId,
           txid: payment_hash,
           amount: null, // Amount could be fetched from the invoice details
           description: 'Payment made',
@@ -127,15 +154,22 @@ module.exports = {
           payment_hash,
         });
       } catch (error) {
-        console.error('Error paying invoice:', error.response ? error.response.data : error.message);
+        console.error(
+          'Error paying invoice:',
+          error.response ? error.response.data : error.message
+        );
         res.status(500).send('Error paying invoice.');
       }
     });
 
     // Route to get transaction history
     router.get('/transactions', async (req, res) => {
+      const { uid: userId } = req.user;
+
       try {
-        const transactions = await Transaction.findAll();
+        const transactions = await Transaction.findAll({
+          where: { userId },
+        });
         res.json(transactions);
       } catch (error) {
         console.error('Error fetching transactions:', error);
@@ -145,6 +179,12 @@ module.exports = {
 
     // Route to get wallet balance
     router.get('/balance', async (req, res) => {
+      const { invoiceKey } = req.user;
+
+      if (!invoiceKey) {
+        return res.status(400).send('Invoice key not found.');
+      }
+
       try {
         const response = await axios.get('https://demo.lnbits.com/api/v1/wallet', {
           headers: {
@@ -157,12 +197,14 @@ module.exports = {
 
         res.json({ balance });
       } catch (error) {
-        console.error('Error fetching balance:', error.response ? error.response.data : error.message);
+        console.error(
+          'Error fetching balance:',
+          error.response ? error.response.data : error.message
+        );
         res.status(500).send('Error fetching balance.');
       }
     });
 
-    // Mount the router under '/plugin-name'
-    app.use(`/${pluginName}`, router);
+    // No need to mount the router here; it's handled by the main application
   },
 };

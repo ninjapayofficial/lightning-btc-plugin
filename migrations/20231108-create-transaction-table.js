@@ -7,11 +7,19 @@ module.exports = {
     const queryInterface = sequelize.getQueryInterface();
     const { DataTypes } = require('sequelize');
 
-    await queryInterface.createTable('lightning_btc_plugin_Transactions', {
+    await queryInterface.createTable('lightning_btc_plugin_Transaction', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
+      },
+      userId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      walletId: {
+        type: DataTypes.UUID,
+        allowNull: false,
       },
       txid: {
         type: DataTypes.STRING,
