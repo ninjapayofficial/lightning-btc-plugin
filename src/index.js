@@ -13,7 +13,7 @@ module.exports = {
     // Define a Sequelize model for transaction history
     const { DataTypes } = require('sequelize');
 
-    const Transaction = sequelize.define(`${pluginName}_Transaction`, {
+    const Transaction = sequelize.define('lightning_btc_plugin_Transactions', {
       txid: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -37,13 +37,13 @@ module.exports = {
       },
     });
 
-    // Sync the model with the database
-    try {
-      await Transaction.sync();
-      console.log(`Transaction model for plugin '${pluginName}' synced with the database`);
-    } catch (err) {
-      console.error(`Error syncing Transaction model for plugin '${pluginName}':`, err);
-    }
+    // // Sync the model with the database
+    // try {
+    //   await Transaction.sync();
+    //   console.log(`Transaction model for plugin '${pluginName}' synced with the database`);
+    // } catch (err) {
+    //   console.error(`Error syncing Transaction model for plugin '${pluginName}':`, err);
+    // }
 
     // Create a router for the plugin
     const express = require('express');
