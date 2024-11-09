@@ -51,6 +51,6 @@ module.exports = {
   },
   down: async ({ context: sequelize }) => {
     const queryInterface = sequelize.getQueryInterface();
-    await queryInterface.dropTable('lightning_btc_plugin_Transactions');
+    await queryInterface.dropTable('lightning_btc_plugin_Transaction'); // Corrected table name
   },
 };
