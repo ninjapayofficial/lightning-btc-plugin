@@ -22,7 +22,7 @@ module.exports = {
           autoIncrement: true,
         },
         userId: {
-          type: DataTypes.UUID,
+          type: DataTypes.STRING,
           allowNull: false,
         },
         walletId: {
