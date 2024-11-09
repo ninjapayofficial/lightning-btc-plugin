@@ -14,11 +14,11 @@ module.exports = {
         autoIncrement: true,
       },
       userId: {
-        type: DataTypes.STRING,
+        type: DataTypes.UUID,
         allowNull: false,
       },
       walletId: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING,
         allowNull: false,
       },
       txid: {
