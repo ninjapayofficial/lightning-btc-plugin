@@ -104,7 +104,9 @@
 
     // Function to load wallet balance
     function loadBalance() {
-      fetch(`${baseUrl}/balance`)
+      fetch(`${baseUrl}/balance`, {
+        credentials: 'include',
+      })
         .then(response => {
           if (!response.ok) {
             throw new Error('Error fetching balance.');
@@ -133,7 +135,8 @@
       fetch(`${baseUrl}/create-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, memo })
+        body: JSON.stringify({ amount, memo }),
+        credentials: 'include',
       })
       .then(response => {
         if (!response.ok) {
@@ -165,7 +168,8 @@
       fetch(`${baseUrl}/pay-invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bolt11 })
+        body: JSON.stringify({ bolt11 }),
+        credentials: 'include',
       })
       .then(response => {
         if (!response.ok) {
@@ -188,7 +192,9 @@
 
     // Function to load transactions
     function loadTransactions() {
-      fetch(`${baseUrl}/transactions`)
+      fetch(`${baseUrl}/transactions`, {
+        credentials: 'include',
+      })
         .then(response => {
           if (!response.ok) {
             throw new Error('Error loading transactions.');
