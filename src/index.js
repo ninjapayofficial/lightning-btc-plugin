@@ -13,48 +13,54 @@ module.exports = {
     console.log(`Initializing plugin '${pluginName}'`);
 
     // Define a Sequelize model for transaction history
-    const Transaction = sequelize.define('lightning_btc_plugin_Transaction', {
-      id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
+    const Transaction = sequelize.define(
+      'lightning_btc_plugin_Transaction',
+      {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        userId: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+        walletId: {
+          type: DataTypes.UUID,
+          allowNull: false,
+        },
+        txid: {
+          type: DataTypes.STRING,
+          allowNull: false,
+          unique: true,
+        },
+        amount: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+        },
+        description: {
+          type: DataTypes.STRING,
+        },
+        invoiceKeyUsed: {
+          type: DataTypes.STRING,
+          allowNull: false,
+        },
+        createdAt: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          defaultValue: DataTypes.NOW,
+        },
+        updatedAt: {
+          type: DataTypes.DATE,
+          allowNull: false,
+          defaultValue: DataTypes.NOW,
+        },
       },
-      userId: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      walletId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-      },
-      txid: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-      },
-      amount: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      description: {
-        type: DataTypes.STRING,
-      },
-      invoiceKeyUsed: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      updatedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      freezeTableName: true, // Prevents Sequelize from pluralizing table name
-    });
+      {
+        freezeTableName: true, // Prevents Sequelize from pluralizing table name
+      }
+    );
+
 
     // Remove the sync call as migrations handle schema updates
     // await Transaction.sync();
