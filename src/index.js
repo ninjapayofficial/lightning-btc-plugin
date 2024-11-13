@@ -67,29 +67,36 @@ module.exports = {
     });
 
     // Helper function to retrieve lnbits provider data
-    function getLnbitsProvider(fundingProviders) {
-      const lnbitsProvider = fundingProviders.find(fp => fp.provider === 'lnbits');
-      if (!lnbitsProvider) {
-        throw new Error('LNbits provider not connected.');
+    function getLnbitsKeys(req) {
+      if (req.provider && req.provider.provider === 'lnbits') {
+        const { instanceUrl, invoiceKey, adminKey } = req.provider;
+        if (!instanceUrl || !invoiceKey || !adminKey) {
+          throw new Error('Incomplete LNbits provider configuration.');
+        }
+        return { instanceUrl, invoiceKey, adminKey };
+      } else {
+        // Fallback to user's main invoiceKey and adminKey
+        const { invoiceKey, adminKey } = req.user;
+        if (!invoiceKey || !adminKey) {
+          throw new Error('Invoice key or Admin key not found.');
+        }
+        // Define a default instanceUrl if necessary
+        const instanceUrl = process.env.LNBITS_INSTANCE_URL || 'https://demo.lnbits.com';
+        return { instanceUrl, invoiceKey, adminKey };
       }
-      const { instanceUrl, invoiceKey, adminKey } = lnbitsProvider;
-      if (!instanceUrl || !invoiceKey || !adminKey) {
-        throw new Error('Incomplete LNbits provider configuration.');
-      }
-      return { instanceUrl, invoiceKey, adminKey };
     }
 
     // Route to create an invoice
     router.post('/create-invoice', async (req, res) => {
       const { amount, memo } = req.body;
-      const { uid: userId, walletId, fundingProviders } = req.user;
+      const { uid: userId, walletId } = req.user;
 
       if (!amount || amount <= 0) {
         return res.status(400).send('Invalid amount.');
       }
 
       try {
-        const { instanceUrl, invoiceKey } = getLnbitsProvider(fundingProviders);
+        const { instanceUrl, invoiceKey } = getLnbitsKeys(req);
 
         const response = await axios.post(
           `${instanceUrl}/api/v1/payments`,
@@ -134,14 +141,14 @@ module.exports = {
     // Route to pay an invoice
     router.post('/pay-invoice', async (req, res) => {
       const { bolt11 } = req.body;
-      const { uid: userId, walletId, fundingProviders } = req.user;
+      const { uid: userId, walletId } = req.user;
 
       if (!bolt11) {
         return res.status(400).send('Invoice (BOLT11) is required.');
       }
 
       try {
-        const { instanceUrl, adminKey } = getLnbitsProvider(fundingProviders);
+        const { instanceUrl, adminKey } = getLnbitsKeys(req);
 
         const response = await axios.post(
           `${instanceUrl}/api/v1/payments`,
@@ -199,10 +206,8 @@ module.exports = {
 
     // Route to get wallet balance
     router.get('/balance', async (req, res) => {
-      const { fundingProviders } = req.user;
-
       try {
-        const { instanceUrl, invoiceKey } = getLnbitsProvider(fundingProviders);
+        const { instanceUrl, invoiceKey } = getLnbitsKeys(req);
 
         const response = await axios.get(`${instanceUrl}/api/v1/wallet`, {
           headers: {
