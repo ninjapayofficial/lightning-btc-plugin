@@ -61,27 +61,38 @@ module.exports = {
       }
     );
 
-
-    // Remove the sync call as migrations handle schema updates
-    // await Transaction.sync();
-
     // Serve the plugin's interface (index.html)
     router.get('/', (req, res) => {
       res.sendFile(path.join(__dirname, 'views', 'index.html'));
     });
 
+    // Helper function to retrieve lnbits provider data
+    function getLnbitsProvider(fundingProviders) {
+      const lnbitsProvider = fundingProviders.find(fp => fp.provider === 'lnbits');
+      if (!lnbitsProvider) {
+        throw new Error('LNbits provider not connected.');
+      }
+      const { instanceUrl, invoiceKey, adminKey } = lnbitsProvider;
+      if (!instanceUrl || !invoiceKey || !adminKey) {
+        throw new Error('Incomplete LNbits provider configuration.');
+      }
+      return { instanceUrl, invoiceKey, adminKey };
+    }
+
     // Route to create an invoice
     router.post('/create-invoice', async (req, res) => {
       const { amount, memo } = req.body;
-      const { uid: userId, walletId, invoiceKey } = req.user;
+      const { uid: userId, walletId, fundingProviders } = req.user;
 
-      if (!invoiceKey) {
-        return res.status(400).send('Invoice key not found.');
+      if (!amount || amount <= 0) {
+        return res.status(400).send('Invalid amount.');
       }
 
       try {
+        const { instanceUrl, invoiceKey } = getLnbitsProvider(fundingProviders);
+
         const response = await axios.post(
-          'https://demo.lnbits.com/api/v1/payments',
+          `${instanceUrl}/api/v1/payments`,
           {
             out: false,
             amount,
@@ -123,22 +134,24 @@ module.exports = {
     // Route to pay an invoice
     router.post('/pay-invoice', async (req, res) => {
       const { bolt11 } = req.body;
-      const { uid: userId, walletId, invoiceKey } = req.user;
+      const { uid: userId, walletId, fundingProviders } = req.user;
 
-      if (!invoiceKey) {
-        return res.status(400).send('Invoice key not found.');
+      if (!bolt11) {
+        return res.status(400).send('Invoice (BOLT11) is required.');
       }
 
       try {
+        const { instanceUrl, adminKey } = getLnbitsProvider(fundingProviders);
+
         const response = await axios.post(
-          'https://demo.lnbits.com/api/v1/payments',
+          `${instanceUrl}/api/v1/payments`,
           {
             out: true,
             bolt11,
           },
           {
             headers: {
-              'X-Api-Key': invoiceKey,
+              'X-Api-Key': adminKey,
               'Content-Type': 'application/json',
             },
           }
@@ -151,9 +164,9 @@ module.exports = {
           userId,
           walletId,
           txid: payment_hash,
-          amount: null, // Amount could be fetched from the invoice details
+          amount: null, // Amount could be fetched from the invoice details if available
           description: 'Payment made',
-          invoiceKeyUsed: invoiceKey,
+          invoiceKeyUsed: adminKey, // Using adminKey for payment
         });
 
         res.json({
@@ -175,6 +188,7 @@ module.exports = {
       try {
         const transactions = await Transaction.findAll({
           where: { userId },
+          order: [['createdAt', 'DESC']],
         });
         res.json(transactions);
       } catch (error) {
@@ -185,14 +199,12 @@ module.exports = {
 
     // Route to get wallet balance
     router.get('/balance', async (req, res) => {
-      const { invoiceKey } = req.user;
-
-      if (!invoiceKey) {
-        return res.status(400).send('Invoice key not found.');
-      }
+      const { fundingProviders } = req.user;
 
       try {
-        const response = await axios.get('https://demo.lnbits.com/api/v1/wallet', {
+        const { instanceUrl, invoiceKey } = getLnbitsProvider(fundingProviders);
+
+        const response = await axios.get(`${instanceUrl}/api/v1/wallet`, {
           headers: {
             'X-Api-Key': invoiceKey,
             'Content-Type': 'application/json',
