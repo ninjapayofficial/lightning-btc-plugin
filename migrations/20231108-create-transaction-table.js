@@ -17,10 +17,10 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      // walletId: {
-      //   type: DataTypes.STRING,
-      //   allowNull: true,
-      // },
+      walletId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       txid: {
         type: DataTypes.STRING,
         allowNull: false,
