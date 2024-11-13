@@ -27,7 +27,7 @@ module.exports = {
         },
         walletId: {
           type: DataTypes.STRING,
-          allowNull: false,
+          allowNull: true,
         },
         txid: {
           type: DataTypes.STRING,
