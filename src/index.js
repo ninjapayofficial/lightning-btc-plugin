@@ -25,10 +25,10 @@ module.exports = {
           type: DataTypes.STRING,
           allowNull: false,
         },
-        walletId: {
-          type: DataTypes.STRING,
-          allowNull: true,
-        },
+        // walletId: {
+        //   type: DataTypes.STRING,
+        //   allowNull: true,
+        // },
         txid: {
           type: DataTypes.STRING,
           allowNull: false,
@@ -89,7 +89,7 @@ module.exports = {
     // Route to create an invoice
     router.post('/create-invoice', async (req, res) => {
       const { amount, memo } = req.body;
-      const { uid: userId, walletId } = req.user;
+      const { uid: userId } = req.user;
 
       if (!amount || amount <= 0) {
         return res.status(400).send('Invalid amount.');
@@ -118,7 +118,7 @@ module.exports = {
         // Store the transaction in the database
         await Transaction.create({
           userId,
-          walletId,
+          // walletId,
           txid: payment_hash,
           amount,
           description: memo,
@@ -141,7 +141,7 @@ module.exports = {
     // Route to pay an invoice
     router.post('/pay-invoice', async (req, res) => {
       const { bolt11 } = req.body;
-      const { uid: userId, walletId } = req.user;
+      const { uid: userId } = req.user;
 
       if (!bolt11) {
         return res.status(400).send('Invoice (BOLT11) is required.');
@@ -169,7 +169,7 @@ module.exports = {
         // Store the transaction in the database
         await Transaction.create({
           userId,
-          walletId,
+          // walletId,
           txid: payment_hash,
           amount: null, // Amount could be fetched from the invoice details if available
           description: 'Payment made',
