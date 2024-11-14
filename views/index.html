@@ -1,51 +1,12 @@
+<!-- plugins/lightning-btc-plugin/views/index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Lightning BTC Plugin</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    h1, h2 {
-      color: #333;
-    }
-    .section {
-      margin-bottom: 40px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-    }
-    input[type="text"], input[type="number"] {
-      width: 300px;
-      padding: 8px;
-    }
-    button {
-      padding: 8px 12px;
-      margin-top: 10px;
-    }
-    .message {
-      margin-top: 10px;
-      color: green;
-    }
-    .error {
-      margin-top: 10px;
-      color: red;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
+    /* Existing styles */
   </style>
 </head>
 <body>
@@ -57,6 +18,7 @@
     <h2>Wallet Balance</h2>
     <p id="balance">Loading balance...</p>
     <button id="refreshBalanceBtn">Refresh Balance</button>
+    <div id="balanceError" class="error"></div>
   </div>
 
   <!-- Create Invoice Section -->
@@ -68,6 +30,7 @@
     <input type="text" id="invoiceMemo" placeholder="Memo (optional)">
     <button id="createInvoiceBtn">Create Invoice</button>
     <div id="createInvoiceMessage"></div>
+    <div id="createInvoiceError" class="error"></div>
   </div>
 
   <!-- Pay Invoice Section -->
@@ -77,6 +40,7 @@
     <input type="text" id="bolt11" placeholder="lnbc...">
     <button id="payInvoiceBtn">Pay Invoice</button>
     <div id="payInvoiceMessage"></div>
+    <div id="payInvoiceError" class="error"></div>
   </div>
 
   <!-- Transactions Section -->
@@ -96,6 +60,7 @@
         <!-- Transactions will be populated here -->
       </tbody>
     </table>
+    <div id="transactionsError" class="error"></div>
   </div>
 
   <script>
@@ -107,18 +72,21 @@
       fetch(`${baseUrl}/balance`, {
         credentials: 'include',
       })
-        .then(response => {
+        .then(async response => {
           if (!response.ok) {
-            throw new Error('Error fetching balance.');
+            const errorText = await response.text();
+            throw new Error(errorText || 'Error fetching balance.');
           }
           return response.json();
         })
         .then(data => {
           document.getElementById('balance').textContent = data.balance + ' sats';
+          document.getElementById('balanceError').textContent = '';
         })
         .catch(error => {
           console.error('Error fetching balance:', error);
           document.getElementById('balance').textContent = 'Error fetching balance.';
+          document.getElementById('balanceError').textContent = error.message;
         });
     }
 
@@ -138,21 +106,25 @@
         body: JSON.stringify({ amount, memo }),
         credentials: 'include',
       })
-      .then(response => {
+      .then(async response => {
         if (!response.ok) {
-          throw new Error('Error creating invoice.');
+          const errorText = await response.text();
+          throw new Error(errorText || 'Error creating invoice.');
         }
         return response.json();
       })
       .then(data => {
         const messageDiv = document.getElementById('createInvoiceMessage');
-        messageDiv.innerHTML = '<p class="message">Invoice created successfully!</p>';
-        messageDiv.innerHTML += '<p><strong>Payment Request:</strong> ' + data.payment_request + '</p>';
+        const errorDiv = document.getElementById('createInvoiceError');
+        messageDiv.innerHTML = `<p class="message">Invoice created successfully!</p>
+                                 <p><strong>Payment Request:</strong> ${data.payment_request}</p>`;
+        errorDiv.textContent = '';
         loadTransactions(); // Refresh transactions
       })
       .catch(error => {
         console.error('Error creating invoice:', error);
-        document.getElementById('createInvoiceMessage').innerHTML = '<p class="error">Error creating invoice.</p>';
+        document.getElementById('createInvoiceMessage').innerHTML = '';
+        document.getElementById('createInvoiceError').textContent = error.message;
       });
     });
 
@@ -171,22 +143,26 @@
         body: JSON.stringify({ bolt11 }),
         credentials: 'include',
       })
-      .then(response => {
+      .then(async response => {
         if (!response.ok) {
-          throw new Error('Error paying invoice.');
+          const errorText = await response.text();
+          throw new Error(errorText || 'Error paying invoice.');
         }
         return response.json();
       })
       .then(data => {
         const messageDiv = document.getElementById('payInvoiceMessage');
-        messageDiv.innerHTML = '<p class="message">Invoice paid successfully!</p>';
-        messageDiv.innerHTML += '<p><strong>Payment Hash:</strong> ' + data.payment_hash + '</p>';
+        const errorDiv = document.getElementById('payInvoiceError');
+        messageDiv.innerHTML = `<p class="message">Invoice paid successfully!</p>
+                                 <p><strong>Payment Hash:</strong> ${data.payment_hash}</p>`;
+        errorDiv.textContent = '';
         loadBalance(); // Refresh balance after payment
         loadTransactions(); // Refresh transactions
       })
       .catch(error => {
         console.error('Error paying invoice:', error);
-        document.getElementById('payInvoiceMessage').innerHTML = '<p class="error">Error paying invoice.</p>';
+        document.getElementById('payInvoiceMessage').innerHTML = '';
+        document.getElementById('payInvoiceError').textContent = error.message;
       });
     });
 
@@ -195,9 +171,10 @@
       fetch(`${baseUrl}/transactions`, {
         credentials: 'include',
       })
-        .then(response => {
+        .then(async response => {
           if (!response.ok) {
-            throw new Error('Error loading transactions.');
+            const errorText = await response.text();
+            throw new Error(errorText || 'Error loading transactions.');
           }
           return response.json();
         })
@@ -214,9 +191,11 @@
             `;
             tbody.appendChild(tr);
           });
+          document.getElementById('transactionsError').textContent = '';
         })
         .catch(error => {
           console.error('Error loading transactions:', error);
+          document.getElementById('transactionsError').textContent = error.message;
         });
     }
 
