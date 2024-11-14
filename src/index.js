@@ -8,9 +8,9 @@ module.exports = {
   init: async function (router, sequelize) {
     console.log(`Initializing Lightning BTC Plugin`);
 
-    // Import shared models
-    const models = require('../../models')(sequelize);
-    const { Transaction } = models; // Exists in main plugin application, not in plugin repo 
+    // // Import shared models
+    // const models = require('../../models')(sequelize);
+    // const { Transaction } = models; // Exists in main plugin application, not in plugin repo 
 
     // Serve the plugin's interface (index.html)
     router.get('/', (req, res) => {
