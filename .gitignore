@@ -2,3 +2,5 @@
 node_modules
 /migrations/20231112-make-walletId-nullable.js
 /migrations/20231108-create-transaction-table.js
+
+migrations_old/
