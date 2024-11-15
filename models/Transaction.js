@@ -1,13 +1,11 @@
-// plugins/lightning-btc-plugin/migrations/20231108-create-transaction-table.js
+// models/Transaction.js
 
-'use strict';
+const { DataTypes } = require('sequelize');
 
-module.exports = {
-  up: async ({ context: sequelize }) => {
-    const queryInterface = sequelize.getQueryInterface();
-    const { DataTypes } = require('sequelize');
-
-    await queryInterface.createTable('lbtc_plugin_Transaction', {
+module.exports = (sequelize) => {
+  const Transaction = sequelize.define(
+    'lbtc_plugin_Transaction',
+    {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -16,10 +14,6 @@ module.exports = {
       userId: {
         type: DataTypes.STRING,
         allowNull: false,
-      },
-      walletId: {
-        type: DataTypes.STRING,
-        allowNull: true,
       },
       txid: {
         type: DataTypes.STRING,
@@ -37,6 +31,10 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      walletId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -47,10 +45,11 @@ module.exports = {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
-    });
-  },
-  down: async ({ context: sequelize }) => {
-    const queryInterface = sequelize.getQueryInterface();
-    await queryInterface.dropTable('lbtc_plugin_Transaction'); // Corrected table name
-  },
+    },
+    {
+      freezeTableName: true, // Prevents Sequelize from pluralizing table name
+    }
+  );
+
+  return Transaction;
 };
