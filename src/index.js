@@ -9,7 +9,7 @@ module.exports = {
     console.log(`Initializing Lightning BTC Plugin`);
 
     // // To Not, use Sequelize or Import shared models-(uncomment below to use your own plugin migration tables)
-    const models = require('../../models')(sequelize);
+    const models = require('./models')(sequelize);
     const { Transaction } = models; // Exists in main plugin application, not in plugin repo 
 
     // Serve the plugin's interface (index.html)
