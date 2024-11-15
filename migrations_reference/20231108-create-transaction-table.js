@@ -7,7 +7,7 @@ module.exports = {
     const queryInterface = sequelize.getQueryInterface();
     const { DataTypes } = require('sequelize');
 
-    await queryInterface.createTable('lbtc_plugin_Transaction', {
+    await queryInterface.createTable('lightning_btc_plugin_Transaction', {
       id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -51,6 +51,6 @@ module.exports = {
   },
   down: async ({ context: sequelize }) => {
     const queryInterface = sequelize.getQueryInterface();
-    await queryInterface.dropTable('lbtc_plugin_Transaction'); // Corrected table name
+    await queryInterface.dropTable('lightning_btc_plugin_Transaction'); // Corrected table name
   },
 };
