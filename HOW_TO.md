@@ -16,3 +16,27 @@ curl -X GET http://localhost:3000/plugins/lightning-btc-plugin/balance \
 
   curl -X GET http://localhost:3000/plugins/lightning-btc-plugin/transactions \
   -H "x-provider-invoice-key: p_ik_tre2qkb7l"
+
+
+
+  \\\ \
+
+  \
+  npm init -y
+  \
+  npm install --save-dev webpack webpack-cli babel-loader @babel/core @babel/preset-env
+
+  \
+  npm install axios sequelize
+
+  \
+  touch .babelrc
+
+  \
+
+  touch webpack.config.js
+
+  \
+
+  npm install axios sequelize
+
